@@ -40,6 +40,11 @@ func GitClone(ctx context.Context) error {
 	return nil
 }
 
+func CleanUp(ctx context.Context) error {
+	os.RemoveAll("/tmp/yeet/example-service")
+	return nil
+}
+
 type BuildParam struct {
 	ActivityParamX string
 	ActivityParamY int

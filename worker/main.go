@@ -32,6 +32,7 @@ func main() {
 		Number:  &number,
 	})
 	yeetWorker.RegisterActivity(yeet.GitClone)
+	yeetWorker.RegisterActivity(yeet.CleanUp)
 
 	err = yeetWorker.Run(worker.InterruptCh())
 	if err != nil {

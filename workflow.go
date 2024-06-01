@@ -34,6 +34,9 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 		return nil, err
 	}
 
+	// TODO defer?
+	err = workflow.ExecuteActivity(ctx, CleanUp, activityParam).Get(ctx, nil)
+
 	workflowResult := &YeetStandardResultObject{
 		success: true,
 	}
