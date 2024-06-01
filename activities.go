@@ -2,16 +2,41 @@ package yeet
 
 import (
 	"context"
+	"fmt"
+	"os"
 
-	"go.temporal.io/sdk/activity"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"go.temporal.io/sdk/activity"
 )
 
 func GitClone(ctx context.Context) error {
-	_, _ = git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
+	repo, err := git.PlainClone("/tmp/yeet/example-service", false, &git.CloneOptions{
 		URL: "https://github.com/khuedoan/example-service",
+		Depth: 1,
+		Progress: os.Stdout,
 	})
+
+	if err != nil {
+		return err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return err
+	}
+
+	cIter, err := repo.Log(&git.LogOptions{From: ref.Hash()})
+	if err != nil {
+		return err
+	}
+
+	// Print commit list
+	err = cIter.ForEach(func(c *object.Commit) error {
+		fmt.Println(c)
+		return nil
+	})
+
 	return nil
 }
 
