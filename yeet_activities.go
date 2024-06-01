@@ -2,13 +2,16 @@ package yeet
 
 import (
 	"context"
-	"time"
 
 	"go.temporal.io/sdk/activity"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/storage/memory"
 )
 
 func GitClone(ctx context.Context) error {
-	time.Sleep(9 * time.Second)
+	_, _ = git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
+		URL: "https://github.com/khuedoan/example-service",
+	})
 	return nil
 }
 
