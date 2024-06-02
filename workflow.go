@@ -7,8 +7,8 @@ import (
 )
 
 type YeetStandardParam struct {
-	WorkflowParamX string
-	WorkflowParamY int
+	Repository string
+	Revision   string
 }
 
 type YeetStandardResultObject struct {
@@ -20,22 +20,28 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 		StartToCloseTimeout: 10 * time.Second,
 	}
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
-	activityParam := BuildParam{
-		ActivityParamX: param.WorkflowParamX,
-		ActivityParamY: param.WorkflowParamY,
+
+	var git *Git
+	gitParam := GitParam{
+		Repository: param.Repository,
+		Revision:   param.Revision,
 	}
+	var gitResult GitResult
+	err := workflow.ExecuteActivity(ctx, git.Clone, gitParam).Get(ctx, &gitResult)
 
-	err := workflow.ExecuteActivity(ctx, GitClone, activityParam).Get(ctx, nil)
-
+	buildParam := BuildParam{
+		ActivityParamX: param.Repository,
+		ActivityParamY: param.Revision,
+	}
 	var build *Build
 	var activityResult BuildResult
-	err = workflow.ExecuteActivity(ctx, build.Buildpacks, activityParam).Get(ctx, &activityResult)
+	err = workflow.ExecuteActivity(ctx, build.Buildpacks, buildParam).Get(ctx, &activityResult)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO defer?
-	err = workflow.ExecuteActivity(ctx, CleanUp, activityParam).Get(ctx, nil)
+	err = workflow.ExecuteActivity(ctx, git.Clean).Get(ctx, nil)
 
 	workflowResult := &YeetStandardResultObject{
 		success: true,

@@ -19,20 +19,19 @@ func main() {
 	defer temporalClient.Close()
 
 	// Create a new Worker.
-	yeetWorker := worker.New(temporalClient, "yeet-task-queue", worker.Options{})
+	yeetWorker := worker.New(temporalClient, "yeet", worker.Options{})
 
 	// Workflow
 	yeetWorker.RegisterWorkflow(yeet.YeetStandard)
 
 	// Activitis
 	message := "This could be a connection string or endpoint details"
-	number := 100
+	number := "100"
 	yeetWorker.RegisterActivity(&yeet.Build{
 		Message: &message,
 		Number:  &number,
 	})
-	yeetWorker.RegisterActivity(yeet.GitClone)
-	yeetWorker.RegisterActivity(yeet.CleanUp)
+	yeetWorker.RegisterActivity(&yeet.Git{})
 
 	err = yeetWorker.Run(worker.InterruptCh())
 	if err != nil {

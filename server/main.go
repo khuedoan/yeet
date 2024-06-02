@@ -33,16 +33,25 @@ func startWorkflowHandler(w http.ResponseWriter, r *http.Request, temporalClient
 	// Set the options for the Workflow Execution.
 	// A Task Queue must be specified.
 	// A custom Workflow Id is highly recommended.
+
+	var workflowParams yeet.YeetStandardParam
+	if err := json.NewDecoder(r.Body).Decode(&workflowParams); err != nil {
+        http.Error(w, "Bad request: unable to decode JSON", http.StatusBadRequest)
+        return
+    }
+
+	// TODO any better way to do this?
+	if workflowParams.Repository == "" || workflowParams.Revision == "" {
+        http.Error(w, "Bad request: missing required fields", http.StatusBadRequest)
+        return
+    }
+
 	workflowOptions := client.StartWorkflowOptions{
-		//      pipeline/ git host / owner  / repo          / name
-		ID:        "yeet/github.com/khuedoan/example-service/master",
-		TaskQueue: "yeet-task-queue",
+		// TODO deterministic workflow ID?
+		// ID: "pipeline/githost/owner/repo/name",
+		TaskQueue: "yeet",
 	}
-	workflowParams := yeet.YeetStandardParam{
-		WorkflowParamX: "Hello World!",
-		WorkflowParamY: 999,
-	}
-	// Call the Temporal Cluster to start the Workflow Execution.
+
 	workflowExecution, err := temporalClient.ExecuteWorkflow(
 		context.Background(),
 		workflowOptions,

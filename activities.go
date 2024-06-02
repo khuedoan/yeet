@@ -2,62 +2,67 @@ package yeet
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing"
 	"go.temporal.io/sdk/activity"
 )
 
-func GitClone(ctx context.Context) error {
-	repo, err := git.PlainClone("/tmp/yeet/example-service", false, &git.CloneOptions{
-		URL: "https://github.com/khuedoan/example-service",
-		Depth: 1,
-		Progress: os.Stdout,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return err
-	}
-
-	cIter, err := repo.Log(&git.LogOptions{From: ref.Hash()})
-	if err != nil {
-		return err
-	}
-
-	// Print commit list
-	err = cIter.ForEach(func(c *object.Commit) error {
-		fmt.Println(c)
-		return nil
-	})
-
-	return nil
+type Git struct {
+	path string
 }
 
-func CleanUp(ctx context.Context) error {
-	os.RemoveAll("/tmp/yeet/example-service")
+type GitParam struct {
+	Repository string
+	Revision   string
+}
+
+type GitResult struct {
+	Path string
+}
+
+func (a *Git) Clone(ctx context.Context, param GitParam) (*GitResult, error) {
+    tempDir, err := os.MkdirTemp("", "yeet-")
+	if err != nil {
+        return nil, err
+	}
+
+	a.path = tempDir
+	_, err = git.PlainClone(a.path, false, &git.CloneOptions{
+		URL:           param.Repository,
+		ReferenceName: plumbing.ReferenceName(param.Revision),
+		Depth:         1,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := &GitResult{
+		Path: a.path,
+	}
+	return result, nil
+}
+
+func (a *Git) Clean(ctx context.Context, param GitParam) error {
+	os.RemoveAll(a.path)
+
 	return nil
 }
 
 type BuildParam struct {
 	ActivityParamX string
-	ActivityParamY int
+	ActivityParamY string
 }
 
 type BuildResult struct {
 	ResultFieldX string
-	ResultFieldY int
+	ResultFieldY string
 }
 
 type Build struct {
 	Message *string
-	Number  *int
+	Number  *string
 }
 
 func (a *Build) Buildpacks(ctx context.Context, param BuildParam) (*BuildResult, error) {
@@ -67,7 +72,7 @@ func (a *Build) Buildpacks(ctx context.Context, param BuildParam) (*BuildResult,
 
 	result := &BuildResult{
 		ResultFieldX: "Success",
-		ResultFieldY: 1,
+		ResultFieldY: "1",
 	}
 
 	return result, nil

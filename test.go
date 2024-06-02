@@ -13,12 +13,12 @@ func Test_Workflow(t *testing.T) {
 	testSuite := &testsuite.WorkflowTestSuite{}
 	env := testSuite.NewTestWorkflowEnvironment()
 	wfParam := YeetStandardParam{
-		WorkflowParamX: "Hello World!",
-		WorkflowParamY: 100,
+		Repository: "Hello World!",
+		Revision:   "100",
 	}
 	activityResult := BuildResult{
 		ResultFieldX: "Message",
-		ResultFieldY: 1,
+		ResultFieldY: "1",
 	}
 	var activities *Build
 	env.OnActivity(activities.Buildpacks, mock.Anything, mock.Anything).Return(&activityResult, nil)
@@ -34,11 +34,11 @@ func Test_Activity(t *testing.T) {
 	env := testSuite.NewTestActivityEnvironment()
 	activityParam := BuildParam{
 		ActivityParamX: "Message",
-		ActivityParamY: 1,
+		ActivityParamY: "1",
 	}
 	var activities Build
 	message := "No messages!"
-	counter := 0
+	counter := "0"
 	activities.Message = &message
 	activities.Number = &counter
 	env.RegisterActivity(activities.Buildpacks)
