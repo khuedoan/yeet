@@ -3,8 +3,13 @@ package yeet
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"go.temporal.io/sdk/activity"
@@ -54,29 +59,86 @@ func (a *Git) Clean(ctx context.Context, param GitParam) error {
 }
 
 type BuildParam struct {
-	ActivityParamX string
-	ActivityParamY string
+	Path  string
+	Image string
+	Tag   string
 }
 
 type BuildResult struct {
-	ResultFieldX string
-	ResultFieldY string
+	Image string
+	Tag   string
 }
 
 type Build struct {
-	Message *string
-	Number  *string
 }
 
 func (a *Build) Buildpacks(ctx context.Context, param BuildParam) (*BuildResult, error) {
 	logger := activity.GetLogger(ctx)
-	logger.Info("The message is:", param.ActivityParamX)
-	logger.Info("The number is:", param.ActivityParamY)
+	logger.Info("Path:", param.Path)
+	logger.Info("Image:", param.Image)
+	logger.Info("Tag:", param.Tag)
 
-	result := &BuildResult{
-		ResultFieldX: "Success",
-		ResultFieldY: "1",
+	docker, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, err
+	}
+	defer docker.Close()
+
+	reader, err := docker.ImagePull(ctx, "docker.io/buildpacksio/pack", image.PullOptions{})
+	if err != nil {
+		return nil, err
 	}
 
+	defer reader.Close()
+	// cli.ImagePull is asynchronous.
+	// The reader needs to be read completely for the pull operation to complete.
+	// If stdout is not required, consider using io.Discard instead of os.Stdout.
+	io.Copy(os.Stdout, reader)
+
+	resp, err := docker.ContainerCreate(ctx, &container.Config{
+		Image:      "docker.io/buildpacksio/pack",
+		Cmd:        []string{"build", "--builder=heroku/builder:22", fmt.Sprintf("%s:%s", param.Image, param.Tag)},
+		Tty:        false,
+		WorkingDir: "/workspace",
+	}, &container.HostConfig{
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: "/var/run/docker.sock",
+				Target: "/var/run/docker.sock",
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: param.Path,
+				Target: "/workspace",
+			},
+		},
+	}, nil, nil, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := docker.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		return nil, err
+	}
+
+	statusCh, errCh := docker.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return nil, err
+		}
+	case <-statusCh:
+	}
+
+	_, err = docker.ContainerLogs(ctx, resp.ID, container.LogsOptions{ShowStdout: true})
+	if err != nil {
+		return nil, err
+	}
+
+	result := &BuildResult{
+		Image: param.Image,
+		Tag:   param.Tag,
+	}
 	return result, nil
 }

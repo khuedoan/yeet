@@ -31,10 +31,6 @@ func main() {
 }
 
 func startWorkflowHandler(w http.ResponseWriter, r *http.Request, temporalClient client.Client) {
-	// Set the options for the Workflow Execution.
-	// A Task Queue must be specified.
-	// A custom Workflow Id is highly recommended.
-
 	var workflowParams yeet.YeetStandardParam
 	if err := json.NewDecoder(r.Body).Decode(&workflowParams); err != nil {
 		http.Error(w, "Bad request: unable to decode JSON", http.StatusBadRequest)
@@ -48,7 +44,7 @@ func startWorkflowHandler(w http.ResponseWriter, r *http.Request, temporalClient
 	}
 
 	workflowOptions := client.StartWorkflowOptions{
-		ID: fmt.Sprintf("%s/%s/%s/%s", workflowParams.Host, workflowParams.Owner, workflowParams.Repository, workflowParams.Revision),
+		ID:        fmt.Sprintf("%s/%s/%s/%s", workflowParams.Host, workflowParams.Owner, workflowParams.Repository, workflowParams.Revision),
 		TaskQueue: "yeet",
 	}
 

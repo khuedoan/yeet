@@ -1,11 +1,20 @@
 # Kitchen sink example for all options
 
+# By default if no yeet.yaml is specified but webhook is set up,
+# it will use the following default config:
+#
+# push:
+#   stages:
+#     - name: dev
+#       groups:
+#         - dev
+
 # This is an event
 # Usually it should trigger on master, but it doesn't have to be
 push:
   # Wanna build and push using the event metadata?
   # It will tag the image as branch name (master) AND commit hash
-  build: true
+  build: true # default
   # After build where do you wanna deploy?
   stages:
     # When pushing to master there's only a single stage to deploy to AG1

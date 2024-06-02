@@ -25,12 +25,7 @@ func main() {
 	yeetWorker.RegisterWorkflow(yeet.YeetStandard)
 
 	// Activitis
-	message := "This could be a connection string or endpoint details"
-	number := "100"
-	yeetWorker.RegisterActivity(&yeet.Build{
-		Message: &message,
-		Number:  &number,
-	})
+	yeetWorker.RegisterActivity(&yeet.Build{})
 	yeetWorker.RegisterActivity(&yeet.Git{})
 
 	err = yeetWorker.Run(worker.InterruptCh())

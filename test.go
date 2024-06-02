@@ -16,10 +16,7 @@ func Test_Workflow(t *testing.T) {
 		Repository: "Hello World!",
 		Revision:   "100",
 	}
-	activityResult := BuildResult{
-		ResultFieldX: "Message",
-		ResultFieldY: "1",
-	}
+	activityResult := BuildResult{}
 	var activities *Build
 	env.OnActivity(activities.Buildpacks, mock.Anything, mock.Anything).Return(&activityResult, nil)
 	env.ExecuteWorkflow(YeetStandard, wfParam)
@@ -33,18 +30,14 @@ func Test_Activity(t *testing.T) {
 	testSuite := &testsuite.WorkflowTestSuite{}
 	env := testSuite.NewTestActivityEnvironment()
 	activityParam := BuildParam{
-		ActivityParamX: "Message",
-		ActivityParamY: "1",
+		Path:  "/tmp/yeet/testdata",
+		Image: "khuedoan/example-service",
+		Tag:   "master",
 	}
 	var activities Build
-	message := "No messages!"
-	counter := "0"
-	activities.Message = &message
-	activities.Number = &counter
 	env.RegisterActivity(activities.Buildpacks)
 	val, err := env.ExecuteActivity(activities.Buildpacks, activityParam)
 	require.NoError(t, err)
 	var res BuildResult
 	require.NoError(t, val.Get(&res))
-	require.Equal(t, "Success", res.ResultFieldX)
 }
