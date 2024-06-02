@@ -2,6 +2,7 @@ package yeet
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/go-git/go-git/v5"
@@ -14,6 +15,8 @@ type Git struct {
 }
 
 type GitParam struct {
+	Host       string
+	Owner      string
 	Repository string
 	Revision   string
 }
@@ -23,14 +26,14 @@ type GitResult struct {
 }
 
 func (a *Git) Clone(ctx context.Context, param GitParam) (*GitResult, error) {
-    tempDir, err := os.MkdirTemp("", "yeet-")
+	tempDir, err := os.MkdirTemp("", "yeet-")
 	if err != nil {
-        return nil, err
+		return nil, err
 	}
 
 	a.path = tempDir
 	_, err = git.PlainClone(a.path, false, &git.CloneOptions{
-		URL:           param.Repository,
+		URL:           fmt.Sprintf("https://%s/%s/%s", param.Host, param.Owner, param.Repository),
 		ReferenceName: plumbing.ReferenceName(param.Revision),
 		Depth:         1,
 	})

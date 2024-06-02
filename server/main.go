@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -36,19 +37,18 @@ func startWorkflowHandler(w http.ResponseWriter, r *http.Request, temporalClient
 
 	var workflowParams yeet.YeetStandardParam
 	if err := json.NewDecoder(r.Body).Decode(&workflowParams); err != nil {
-        http.Error(w, "Bad request: unable to decode JSON", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Bad request: unable to decode JSON", http.StatusBadRequest)
+		return
+	}
 
 	// TODO any better way to do this?
-	if workflowParams.Repository == "" || workflowParams.Revision == "" {
-        http.Error(w, "Bad request: missing required fields", http.StatusBadRequest)
-        return
-    }
+	if workflowParams.Host == "" || workflowParams.Owner == "" || workflowParams.Repository == "" || workflowParams.Revision == "" {
+		http.Error(w, "Bad request: missing required fields", http.StatusBadRequest)
+		return
+	}
 
 	workflowOptions := client.StartWorkflowOptions{
-		// TODO deterministic workflow ID?
-		// ID: "pipeline/githost/owner/repo/name",
+		ID: fmt.Sprintf("%s/%s/%s/%s", workflowParams.Host, workflowParams.Owner, workflowParams.Repository, workflowParams.Revision),
 		TaskQueue: "yeet",
 	}
 

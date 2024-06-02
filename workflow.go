@@ -7,6 +7,8 @@ import (
 )
 
 type YeetStandardParam struct {
+	Host       string
+	Owner      string
 	Repository string
 	Revision   string
 }
@@ -23,6 +25,8 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 
 	var git *Git
 	gitParam := GitParam{
+		Host:       param.Host,
+		Owner:      param.Owner,
 		Repository: param.Repository,
 		Revision:   param.Revision,
 	}
