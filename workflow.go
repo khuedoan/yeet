@@ -3,6 +3,7 @@ package yeet
 import (
 	"time"
 
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -20,6 +21,9 @@ type YeetStandardResultObject struct {
 func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardResultObject, error) {
 	activityOptions := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: 3,
+		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, activityOptions)
 
@@ -32,6 +36,9 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 	}
 	var gitResult GitResult
 	err := workflow.ExecuteActivity(ctx, git.Clone, gitParam).Get(ctx, &gitResult)
+	if err != nil {
+		return nil, err
+	}
 
 	buildParam := BuildParam{
 		ActivityParamX: param.Repository,
