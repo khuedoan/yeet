@@ -1,24 +1,25 @@
 // Kitchen sink example for all options
 
-// By default if no yeet.yaml is specified but webhook is set up,
-// it will use the following default config:
-// push: {
-//     stages: [{
-//         name: "dev"
-//         groups: [
-//             "dev"
-//         ]
-//     }]
-// }
+// By default if no yeet.cue is specified but webhook is set up, it will only build the app.
+// It will automatically check if that commit is already built, if not it will build it
+// It will tag the image as git reference (e.g. master) AND commit hash,
+//
+// For example when you push to master the following image tags are pushed:
+// - khuedoan/example-service:master
+// - khuedoan/example-service:75d71cc66d6a7f8815fa30978089c862046edace
 
-// This is an event
+// This is a regex for Git reference
 // Usually it should trigger on master, but it doesn't have to be
-push: {
-    // Wanna build and push using the event metadata?
-    // It will tag the image as branch name (master) AND commit hash
-    build: true  // default
+"master": {
+    // Because dev environments tracks a static branch name,
+    // we should include a hash to update pod image version.
+    // In GitOps config files (e.g. Helm values, Timoni values), this will be set as:
+    // image:
+    //   repository: khuedoan/example-service
+    //   tag: master@sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03
+    includeHash: true // default false
 
-    // After build where do you wanna deploy?
+    // Where do you wanna deploy?
     stages: [
         // When pushing to master there's only a single stage to deploy to AG1
         {
@@ -37,11 +38,7 @@ push: {
 }
 
 // Release strategy for a git tag, usually on a good commit in master
-tag: {
-    // A push to master already built
-    // Just tag the commit hash to a new name, e.g. v1.2.3
-    build: false
-
+"v*.*.*": {
     stages: [
         // Now we have multiple stages after releasing the app
         // First deploy to staging
@@ -83,7 +80,7 @@ tag: {
                 // A groups can be as specific as it needs, down to the cluster level...
                 "us1/main/west/cluster-a",
                 "us1/main/west/cluster-b",
-                // ...or just the deployment name
+                // ...or just the deployment name, it will recursively find member targets
                 "usf"
             ]
         }
