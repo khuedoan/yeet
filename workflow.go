@@ -53,8 +53,33 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 		return nil, err
 	}
 
+	var gitops *Git
+	gitopsParam := GitParam{
+		Host:       param.Host,
+		Owner:      "khuedoan",
+		Repository: "timoni-gitops-test",
+		Revision:   "master",
+	}
+	var gitopsResult GitResult
+	err = workflow.ExecuteActivity(ctx, gitops.Clone, gitopsParam).Get(ctx, &gitopsResult)
+	if err != nil {
+		return nil, err
+	}
+
+	var deploy *Deploy
+	deployParam := DeployParam{
+		RepoPath: gitopsResult.Path,
+		SubPath:  fmt.Sprintf("%s/%s", param.Owner, param.Repository),
+	}
+	var deployResult DeployResult
+	err = workflow.ExecuteActivity(ctx, deploy.GetConfig, deployParam).Get(ctx, &deployResult)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO defer?
-	err = workflow.ExecuteActivity(ctx, git.Clean).Get(ctx, nil)
+	_ = workflow.ExecuteActivity(ctx, git.Clean).Get(ctx, nil)
+	_ = workflow.ExecuteActivity(ctx, gitops.Clean).Get(ctx, nil)
 
 	workflowResult := &YeetStandardResultObject{
 		success: true,

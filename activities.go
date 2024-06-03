@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 
+	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/load"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
@@ -141,4 +143,61 @@ func (a *Build) Buildpacks(ctx context.Context, param BuildParam) (*BuildResult,
 		Tag:   param.Tag,
 	}
 	return result, nil
+}
+
+type Deploy struct {
+	Config map[string]EventConfig
+}
+
+type EventConfig struct {
+	Stages []DeployStage
+}
+
+type DeployStage struct {
+	Name   string
+	Groups []string
+}
+
+type DeployParam struct {
+	RepoPath string
+	SubPath  string
+}
+
+type DeployResult struct {
+}
+
+func (a *Deploy) GetConfig(ctx context.Context, param DeployParam) (*DeployResult, error) {
+	cuectx := cuecontext.New()
+	instances := load.Instances([]string{
+		fmt.Sprintf("%s/apps/%s/yeet.cue", param.RepoPath, param.SubPath),
+	}, nil)
+	if len(instances) == 0 {
+		fmt.Println("No instances loaded")
+		return nil, nil
+	}
+	instance := instances[0]
+
+	if err := instance.Err; err != nil {
+		fmt.Println("Failed to load instance:", err)
+		return nil, err
+	}
+
+	// Build a value from the Cue instance
+	value := cuectx.BuildInstance(instance)
+
+	if err := value.Err(); err != nil {
+		fmt.Println("Failed to build value from instance:", err)
+		return nil, err
+	}
+
+	// Fill the Go struct with the Cue value
+	if err := value.Decode(&a.Config); err != nil {
+		fmt.Println("Failed to decode Cue value into Go struct:", err)
+		return nil, err
+	}
+
+	// Print the parsed configuration
+	fmt.Printf("Parsed ConfigMap: %+v\n", a.Config)
+
+	return &DeployResult{}, nil
 }

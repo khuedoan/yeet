@@ -25,8 +25,9 @@ func main() {
 	yeetWorker.RegisterWorkflow(yeet.YeetStandard)
 
 	// Activitis
-	yeetWorker.RegisterActivity(&yeet.Build{})
 	yeetWorker.RegisterActivity(&yeet.Git{})
+	yeetWorker.RegisterActivity(&yeet.Build{})
+	yeetWorker.RegisterActivity(&yeet.Deploy{})
 
 	err = yeetWorker.Run(worker.InterruptCh())
 	if err != nil {
