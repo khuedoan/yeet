@@ -71,10 +71,21 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 		RepoPath: gitopsResult.Path,
 		SubPath:  fmt.Sprintf("%s/%s", param.Owner, param.Repository),
 	}
-	var deployResult DeployResult
-	err = workflow.ExecuteActivity(ctx, deploy.GetConfig, deployParam).Get(ctx, &deployResult)
+	var deployConfig DeployConfig
+	err = workflow.ExecuteActivity(ctx, deploy.GetConfig, deployParam).Get(ctx, &deployConfig)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, stage := range deployConfig[param.Revision].Stages {
+		workflow.ExecuteActivity(ctx, deploy.ProcessStage, stage).Get(ctx, nil)
+		if stage.Wait != "" {
+			wait, err := time.ParseDuration(stage.Wait)
+			if err != nil {
+				return nil, err
+			}
+			workflow.Sleep(ctx, wait)
+		}
 	}
 
 	// TODO defer?

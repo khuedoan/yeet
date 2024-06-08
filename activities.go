@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
@@ -146,8 +147,10 @@ func (a *Build) Buildpacks(ctx context.Context, param BuildParam) (*BuildResult,
 }
 
 type Deploy struct {
-	Config map[string]EventConfig
+	Config DeployConfig
 }
+
+type DeployConfig map[string]EventConfig
 
 type EventConfig struct {
 	Stages []DeployStage
@@ -156,6 +159,7 @@ type EventConfig struct {
 type DeployStage struct {
 	Name   string
 	Groups []string
+	Wait   string
 }
 
 type DeployParam struct {
@@ -166,7 +170,7 @@ type DeployParam struct {
 type DeployResult struct {
 }
 
-func (a *Deploy) GetConfig(ctx context.Context, param DeployParam) (*DeployResult, error) {
+func (a *Deploy) GetConfig(ctx context.Context, param DeployParam) (DeployConfig, error) {
 	cuectx := cuecontext.New()
 	instances := load.Instances([]string{
 		fmt.Sprintf("%s/apps/%s/yeet.cue", param.RepoPath, param.SubPath),
@@ -199,5 +203,15 @@ func (a *Deploy) GetConfig(ctx context.Context, param DeployParam) (*DeployResul
 	// Print the parsed configuration
 	fmt.Printf("Parsed ConfigMap: %+v\n", a.Config)
 
-	return &DeployResult{}, nil
+	return a.Config, nil
+}
+
+func (a *Deploy) ProcessStage(ctx context.Context, stage DeployStage) error {
+	// TODO place holder
+	// update based on groups
+	// commit
+	// push
+	time.Sleep(10 * time.Second)
+
+	return nil
 }
