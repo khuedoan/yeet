@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/format"
 	"cuelang.org/go/cue/load"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -206,12 +207,40 @@ func (a *Deploy) GetConfig(ctx context.Context, param DeployParam) (DeployConfig
 	return a.Config, nil
 }
 
-func (a *Deploy) ProcessStage(ctx context.Context, stage DeployStage) error {
+func (a *Deploy) ProcessStage(ctx context.Context, param DeployParam, stage DeployStage) error {
 	// TODO place holder
 	// update based on groups
 	// commit
 	// push
-	time.Sleep(10 * time.Second)
+	filePath := fmt.Sprintf("%s/apps/%s/dev/main/bundle.cue", param.RepoPath, param.SubPath)
+	cuectx := cuecontext.New()
+	instances := load.Instances([]string{
+		filePath,
+	}, nil)
+	instance := instances[0]
+
+	tagPath := cue.MakePath(
+		cue.Str("bundle"),
+		cue.Str("instances"),
+		cue.Str("podinfo"),
+		cue.Str("values"),
+		cue.Str("controllers"),
+		cue.Str("main"),
+		cue.Str("containers"),
+		cue.Str("app"),
+		cue.Str("image"),
+		cue.Str("tag"),
+	)
+	newTag := "new-tag@sha256:newshahash"
+	value := cuectx.BuildInstance(instance)
+	// TODO https://github.com/cue-lang/cue/issues/2170
+	value = value.FillPath(tagPath, newTag)
+
+	updatedCueBytes, _ := format.Node(value.Syntax())
+	err := os.WriteFile(filePath, updatedCueBytes, 0644)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -78,7 +78,7 @@ func YeetStandard(ctx workflow.Context, param YeetStandardParam) (*YeetStandardR
 	}
 
 	for _, stage := range deployConfig[param.Revision].Stages {
-		workflow.ExecuteActivity(ctx, deploy.ProcessStage, stage).Get(ctx, nil)
+		workflow.ExecuteActivity(ctx, deploy.ProcessStage, deployParam, stage).Get(ctx, nil)
 		if stage.Wait != "" {
 			wait, err := time.ParseDuration(stage.Wait)
 			if err != nil {
